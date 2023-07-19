@@ -1,9 +1,14 @@
 import uvicorn
 import requests
 import json
+import uuid
+import random
+import math
+import hashlib
 from fastapi import FastAPI, File, UploadFile
 from config import Config
 from typing import List
+from datetime import datetime
 
 app = FastAPI(title="Buyer's order rating API", description="API đánh giá đơn hàng Shopee")
 cfg = Config()
@@ -38,11 +43,36 @@ def get_unrated_orders(cookie:str):
     }
     return can_rate_order
 
+def get_signature():
+    r = str(datetime.timestamp(datetime.now()))[0:10]
+    aha = ''
+    e = str(uuid.uuid4()).replace('-','')
+    print(e)
+    t = 4103
+    temp = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    for i in range(0,6):
+        aha += temp[math.floor(random.random() * len(temp))]
+    bha = '{}@{}@{}@shopee@{}'.format(aha, e, t, r)
+    print(bha)
+    return '{}-{}-{}'.format(aha, hashlib.md5(bha.encode()).hexdigest(), r)
+
 @app.post('/rate_order')
 def rate_order(order_id:int, shop_id:int, list_product_ids: str, cookie:str, files: List[UploadFile] = File(...)):
-    api = cfg.get_shopee_api().get('rate_order')
+    # Confirm delivered API
+    confirm_delivered_api = cfg.get_shopee_api().get('confirm_deliverd_order')
+    confirm_order = {
+        'order_id':order_id
+    }
+    r_confirm = requests.post(confirm_delivered_api, headers={'Cookie':cookie, 'X-Api-Source':'pc'}, data=confirm_order)
+    print('Order deliver confirmed')
+    
+    # Upload rate images
     for file in files:
         print(file)
+        # Call API for each file
+    
+    # Create rate form and call rate order api
+    rate_order_api = cfg.get_shopee_api().get('rate_order')
     list_rate_products = []
     for product_id in list_product_ids.split(','):
         rate_product_form = {
@@ -73,8 +103,13 @@ def rate_order(order_id:int, shop_id:int, list_product_ids: str, cookie:str, fil
     }
     json_params = json.dumps(rate_form)
     print(json_params)
-    r = requests.post(api, headers={'Cookie':cookie, 'X-Api-Source':'pc'}, data=json_params)
+    r = requests.post(rate_order_api, headers={'Cookie':cookie, 'X-Api-Source':'pc'}, data=json_params)
     return {'data': r.json()}
+
+@app.get('/test')
+def test():
+    a = get_signature()
+    return {'cc':a}
 
 if __name__ == "__main__":
     uvicorn.run(app=app, host='0.0.0.0',port=2210)
