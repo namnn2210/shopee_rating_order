@@ -9,6 +9,10 @@ from fastapi import FastAPI, File, UploadFile
 from config import Config
 from typing import List
 from datetime import datetime
+import os
+from base64 import b64decode
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
 app = FastAPI(title="Buyer's order rating API", description="API đánh giá đơn hàng Shopee")
 cfg = Config()
@@ -106,10 +110,26 @@ def rate_order(order_id:int, shop_id:int, list_product_ids: str, cookie:str, fil
     r = requests.post(rate_order_api, headers={'Cookie':cookie, 'X-Api-Source':'pc'}, data=json_params)
     return {'data': r.json()}
 
-@app.get('/test')
+@app.get('/generate_signature')
 def test():
     a = get_signature()
     return {'cc':a}
+
+@app.post('/test_decrypt_token')
+def test_decrypt_token(token: str, request_id: str):
+    # Test
+    #Token
+    data = b64decode(token)
+    #Request-id
+    key = request_id.encode(encoding = 'UTF-8')
+    iv = "1234567887654321".encode(encoding = 'UTF-8')
+
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    decrypted = unpad(cipher.decrypt(data), 16)
+
+    print(decrypted)
+    print(b64decode(decrypted))
+    return { 'Authorization': decrypted}
 
 if __name__ == "__main__":
     uvicorn.run(app=app, host='0.0.0.0',port=2210)
