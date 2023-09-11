@@ -16,39 +16,93 @@ app = FastAPI(title="Buyer's order rating API",
 cfg = Config()
 
 
-@app.post("/get_account_info")
+@app.get("/get_account_info")
 async def get_account_info(cookie: str):
     api = cfg.get_shopee_api().get('get_account_info')
     r = requests.get(api, headers={'Cookie': cookie})
     return r.json()
 
 
-@app.post("/get_unrated_orders")
-async def get_unrated_orders(cookie: str):
+@app.get("/get_unconfirmed_orders")
+async def get_unconfirmed_orders(cookie: str):
     api = cfg.get_shopee_api().get('get_all_order')
     params = {
-        'limit': 1,
+        'limit': 5,
         'offset': 0,
         'list_type': 8
     }
     r = requests.get(
         api, headers={'Cookie': cookie, 'X-Api-Source': 'pc'}, params=params)
-    order_data = r.json()['data']['details_list'][0]
-    list_order_products_data = order_data['info_card']['order_list_cards'][0]['product_info']['item_groups'][0]['items']
-    print(list_order_products_data)
-    list_products = []
-    for product in list_order_products_data:
-        item_id = product['item_id']
-        item_name = product['name']
-        model_name = product['model_name']
-        list_products.append(
-            {'item_id': item_id, 'item_name': item_name, 'model_name': model_name})
-    can_rate_order = {
-        'order_id': order_data['info_card']['order_id'],
-        'shop_id': order_data['info_card']['order_list_cards'][0]['shop_info']['shop_id'],
-        'list_products': list_products
+    if r.json()['data']['next_offset'] == -1:
+        return {
+            'error': 0,
+            'data': []
+        }
+    else:
+        list_unconfirmed = []
+        orders_data = r.json()['data']['details_list']
+        for order in orders_data:
+            list_order_products_data = order['info_card'][
+                'order_list_cards'][0]['product_info']['item_groups'][0]['items']
+            list_products = []
+            for product in list_order_products_data:
+                item_id = product['item_id']
+                item_name = product['name']
+                model_name = product['model_name']
+                list_products.append(
+                    {'item_id': item_id, 'item_name': item_name, 'model_name': model_name})
+            can_confirm_order = {
+                'order_id': order['info_card']['order_id'],
+                'shop_id': order['info_card']['order_list_cards'][0]['shop_info']['shop_id'],
+                'list_products': list_products
+            }
+            list_unconfirmed.append(can_confirm_order)
+        return {
+            'error': 0,
+            'data': list_unconfirmed
+        }
+
+
+@app.get("/get_unrated_orders")
+async def get_unrated_orders(cookie: str):
+    api = cfg.get_shopee_api().get('get_all_order')
+    params = {
+        'limit': 1,
+        'offset': 0,
+        'list_type': 3
     }
-    return can_rate_order
+    r = requests.get(
+        api, headers={'Cookie': cookie, 'X-Api-Source': 'pc'}, params=params)
+    logger.info(r.json())
+    if r.json()['data']['next_offset'] == -1:
+        return {
+            'error': 0,
+            'data': []
+        }
+    else:
+        list_unrated = []
+        orders_data = r.json()['data']['details_list']
+        # logger.info(orders_data)
+        for order in orders_data:
+            list_order_products_data = order['info_card'][
+                'order_list_cards'][0]['product_info']['item_groups'][0]['items']
+            list_products = []
+            for product in list_order_products_data:
+                item_id = product['item_id']
+                item_name = product['name']
+                model_name = product['model_name']
+                list_products.append(
+                    {'item_id': item_id, 'item_name': item_name, 'model_name': model_name})
+            can_rate_order = {
+                'order_id': order['info_card']['order_id'],
+                'shop_id': order['info_card']['order_list_cards'][0]['shop_info']['shop_id'],
+                'list_products': list_products
+            }
+            list_unrated.append(can_rate_order)
+        return {
+            'error': 0,
+            'data': list_unrated
+        }
 
 
 @app.post('/preupload')
