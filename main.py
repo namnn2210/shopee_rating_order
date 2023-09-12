@@ -23,8 +23,8 @@ async def get_account_info(cookie: str):
     return r.json()
 
 
-@app.get("/get_unconfirmed_orders")
-async def get_unconfirmed_orders(cookie: str):
+# @app.get("/get_unconfirmed_orders")
+def get_unconfirmed_orders(cookie: str):
     api = cfg.get_shopee_api().get('get_all_order')
     params = {
         'limit': 15,
@@ -63,8 +63,8 @@ async def get_unconfirmed_orders(cookie: str):
         }
 
 
-@app.get("/get_unrated_orders")
-async def get_unrated_orders(cookie: str):
+# @app.get("/get_unrated_orders")
+def get_unrated_orders(cookie: str):
     api = cfg.get_shopee_api().get('get_all_order')
     params = {
         'limit': 15,
@@ -101,6 +101,7 @@ async def get_unrated_orders(cookie: str):
                     'list_products': list_products
                 }
                 list_unrated.append(can_rate_order)
+        logger.info(list_unrated)
         return {
             'error': 0,
             'data': list_unrated
@@ -142,34 +143,59 @@ async def decrypt(token: str, request_id: str):
     return authorization
 
 
+@app.get('/unrated_order')
+async def unrated_order(cookie: str):
+    logger.info('LẤY DANH SÁCH ĐƠN CHƯA XÁC NHẬN HOÀN THÀNH')
+    # Get unconfirmed orders and process confirm
+    unconfirmed_orders = get_unconfirmed_orders(cookie=cookie)['data']
+    logger.info(unconfirmed_orders)
+
+    # Confirm delivered API
+    if len(unconfirmed_orders) != 0:
+        logger.info('XÁC NHẬN HOÀN THÀNH')
+        confirm_delivered_api = cfg.get_shopee_api().get('confirm_deliverd_order')
+
+        for order in unconfirmed_orders['data']:
+            confirm_order = {
+                'order_id': order['order_id']
+            }
+            requests.post(confirm_delivered_api, headers={
+                'Cookie': cookie, 'X-Api-Source': 'pc'}, data=confirm_order)
+            logger.info('Order %s confirmed delivery' % order['order_id'])
+
+    logger.info('LẤY DANH SÁCH ĐƠN CHƯA ĐÁNH GIÁ')
+    unrated_orders = get_unrated_orders(cookie=cookie)['data']
+
+    return unrated_orders
+
+
 @app.post('/rate_order')
 async def rate_order(cookie: str):
 
     logger.info('LẤY DANH SÁCH ĐƠN CHƯA XÁC NHẬN HOÀN THÀNH')
     # Get unconfirmed orders and process confirm
-    unconfirmed_orders = requests.get(
-        'http://localhost:2210/get_unconfirmed_orders', headers={'Cookie': cookie, 'X-Api-Source': 'pc'}).json()
+    unconfirmed_orders = get_unconfirmed_orders(cookie=cookie)['data']
     logger.info(unconfirmed_orders)
 
     # Confirm delivered API
-    logger.info('XÁC NHẬN HOÀN THÀNH')
-    confirm_delivered_api = cfg.get_shopee_api.get('confirm_deliverd_order')
+    if len(unconfirmed_orders) != 0:
+        logger.info('XÁC NHẬN HOÀN THÀNH')
+        confirm_delivered_api = cfg.get_shopee_api().get('confirm_deliverd_order')
 
-    for order in unconfirmed_orders['data']:
-        confirm_order = {
-            'order_id': order['order_id']
-        }
-        requests.post(confirm_delivered_api, headers={
-            'Cookie': cookie, 'X-Api-Source': 'pc'}, data=confirm_order)
-        logger.info('Order %s confirmed delivery' % order['order_id'])
+        for order in unconfirmed_orders['data']:
+            confirm_order = {
+                'order_id': order['order_id']
+            }
+            requests.post(confirm_delivered_api, headers={
+                'Cookie': cookie, 'X-Api-Source': 'pc'}, data=confirm_order)
+            logger.info('Order %s confirmed delivery' % order['order_id'])
 
     logger.info('LẤY DANH SÁCH ĐƠN CHƯA ĐÁNH GIÁ')
-    unrated_orders = requests.get(
-        'http://localhost:2210/get_unrated_orders', headers={'Cookie': cookie, 'X-Api-Source': 'pc'}).json()
+    unrated_orders = get_unrated_orders(cookie=cookie)['data']
 
     rate_order_api = cfg.get_shopee_api().get('rate_order')
 
-    for order in unrated_orders['data']:
+    for order in unrated_orders:
         logger.info('ĐÁNH GIÁ')
         # preupload_api = cfg.get_shopee_api().get('preupload')
         # upload_api = cfg.get_shopee_api().get('upload')
@@ -246,8 +272,10 @@ async def rate_order(cookie: str):
             "api_version": 2
         }
         json_params = json.dumps(rate_form)
+        logger.info(json_params)
         r = requests.post(rate_order_api, headers={
-            'Cookie': cookie, 'X-Api-Source': 'pc'}, data=json_params)
+            'Cookie': cookie, 'X-Api-Source': 'pc', 'Referer': 'https://shopee.vn/user/purchase/?type=3', 'X-Csrftoken': 'ChxdrLjaxFtdTGIlGLWPsEpTvNVO36XV', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76'}, data=json_params)
+        logger.info(r.json())
     return {'data': 'XỬ LÍ THÀNH CÔNG'}
 
 
