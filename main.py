@@ -19,7 +19,7 @@ cfg = Config()
 @app.get("/get_account_info")
 async def get_account_info(cookie: str):
     api = cfg.get_shopee_api().get('get_account_info')
-    r = requests.get(api, headers={'Cookie': cookie})
+    r = requests.get(api, headers={'Cookie': cookie, 'X-Api-Source': 'pc'})
     return r.json()
 
 
