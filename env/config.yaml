@@ -1,5 +1,7 @@
 shopee_api:
-  get_account_info: https://shopee.vn/api/v4/account/basic/get_account_info
+  get_account_info: https://shopee.vn/api/v4/account/get_profile
   get_all_order: https://shopee.vn/api/v4/order/get_order_list
   rate_order: https://shopee.vn/api/v2/item/add_rating
   confirm_deliverd_order : https://shopee.vn/api/v4/order/action/confirm_order_delivered
+  preupload: https://api.mms.shopee.vn/uploadapi/api/v1/image/preupload
+  upload: https://up-sp-global.img.susercontent.com/api/v3/mms
