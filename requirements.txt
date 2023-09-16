@@ -9,6 +9,7 @@ colorama==0.4.6
 et-xmlfile==1.1.0
 exceptiongroup==1.1.2
 fastapi==0.100.0
+greenlet==2.0.2
 h11==0.14.0
 httptools==0.6.0
 idna==3.4
@@ -19,10 +20,12 @@ openpyxl==3.1.2
 outcome==1.2.0
 pandas==2.0.3
 Pillow==10.0.0
+playwright==1.37.0
 pycparser==2.21
 pycryptodome==3.18.0
 pydantic==2.0.2
 pydantic_core==2.1.2
+pyee==9.0.4
 PySocks==1.7.1
 python-dateutil==2.8.2
 python-dotenv==1.0.0
