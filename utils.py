@@ -2,6 +2,8 @@ import uuid
 import random
 import math
 import hashlib
+import re
+import json
 
 from datetime import datetime
 from base64 import b64decode
@@ -31,3 +33,30 @@ def get_signature():
         aha += temp[math.floor(random.random() * len(temp))]
     bha = '{}@{}@{}@shopee@{}'.format(aha, e, t, r)
     return '{}-{}-{}'.format(aha, hashlib.md5(bha.encode()).hexdigest(), r), e
+
+
+def cookies_to_json(e):
+    t = re.search(r'(\.|)shopee(.*?)$', e)
+    i = ""
+    if not t:
+        return ""
+
+    t = t.group(0).split(";")
+    for item in t:
+        if item:
+            s = item.split("=")
+            c = s[0]
+            r = s[1]
+            value_match = re.search(c + "=" + r + "=(.*?)$", item)
+            if value_match:
+                value = value_match.group(1).replace('"', "")
+                cookie_data = {
+                    "domain": c,
+                    "name": r,
+                    "path": "/",
+                    "value": value
+                }
+                i += json.dumps(cookie_data) + ","
+
+    i = "[" + i[:-1] + "]"
+    return i

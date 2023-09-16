@@ -1,15 +1,13 @@
 import uvicorn
 import requests
 import json
-import io
-import numpy as np
 
-from PIL import Image
 from fastapi import FastAPI, File, UploadFile
 from config import Config
-from typing import List
 from utils import get_signature, decrypt_token
 from loguru import logger
+from process import get_cookie_string
+
 
 app = FastAPI(title="Buyer's order rating API",
               description="API đánh giá đơn hàng Shopee")
@@ -17,9 +15,12 @@ cfg = Config()
 
 
 @app.get("/get_account_info")
-async def get_account_info(cookie: str):
+async def get_account_info(cookie: str, username: str, password: str):
+    cookie_string = await get_cookie_string(cookie, username, password)
+    logger.info(cookie_string)
     api = cfg.get_shopee_api().get('get_account_info')
-    r = requests.get(api, headers={'Cookie': cookie, 'X-Api-Source': 'pc'})
+    r = requests.get(
+        api, headers={'Cookie': cookie_string, 'X-Api-Source': 'pc'})
     return r.json()
 
 
