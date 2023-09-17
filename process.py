@@ -9,6 +9,20 @@ async def get_cookie_string(cookies: str, username: str, password: str):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
+        
+        # Define a function to intercept network requests
+        def intercept_request(route, request):
+            # Access the headers of the intercepted request
+            headers = request.headers()
+
+            # Extract the Referer header
+            referer_header = headers.get("Referer")
+
+            if referer_header:
+                print("Referer Header Value:", referer_header)
+
+            # Continue the request
+            route.continue_()
 
         await page.context.add_cookies(cookie_list)
 
