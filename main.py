@@ -1,6 +1,7 @@
 import uvicorn
 import requests
 import json
+import re
 
 from fastapi import FastAPI, File, UploadFile
 from config import Config
@@ -16,11 +17,24 @@ cfg = Config()
 
 @app.get("/get_account_info")
 async def get_account_info(cookie: str, username: str, password: str):
+    # regex_spc_u = r'SPC_U=\d+;'
+    # regex_spc_ec = r'SPC_EC=.{0,};'
+    # spc_u_match = re.search(regex_spc_u, cookie)
+    # if spc_u_match:
+    #     spc_u = spc_u_match.group()
+    #     logger.info(spc_u)
+    # spc_ec_match = re.search(regex_spc_ec, cookie)
+    # if spc_ec_match:
+    #     spc_ec = spc_ec_match.group()
+    #     logger.info(spc_ec)
     cookie_string = await get_cookie_string(cookie, username, password)
-    logger.info(cookie_string)
+    # logger.info('before %s' % cookie_string)
+    # cookie_string = cookie_string.replace(
+    #     'SPC_U=-;', spc_u).replace('SPC_EC=-;', spc_ec)
+    logger.info('after %s' % cookie_string)
     api = cfg.get_shopee_api().get('get_account_info')
     r = requests.get(
-        api, headers={'Cookie': cookie_string.strip(), 'X-Api-Source': 'pc'})
+        api, headers={'Cookie': cookie_string})
     return r.json()
 
 
@@ -173,7 +187,7 @@ async def unrated_order(cookie: str):
 @app.post('/rate_order')
 async def rate_order(cookie: str, username: str, password: str):
     cookie_string = await get_cookie_string(cookie, username, password)
-    
+
     logger.info('LẤY DANH SÁCH ĐƠN CHƯA XÁC NHẬN HOÀN THÀNH')
     # Get unconfirmed orders and process confirm
     unconfirmed_orders = get_unconfirmed_orders(cookie=cookie_string)['data']
@@ -283,16 +297,16 @@ async def rate_order(cookie: str, username: str, password: str):
                 pass
         return {
             'status_code': 200,
-            'total_unrated_order':len(unrated_orders),
-            'done':count,
-            'description':'XỬ LÍ THÀNH CÔNG'
+            'total_unrated_order': len(unrated_orders),
+            'done': count,
+            'description': 'XỬ LÍ THÀNH CÔNG'
         }
     else:
         return {
             'status_code': 200,
-            'total_unrated_order':0,
-            'done':0,
-            'description':'KHÔNG CÓ ĐƠN HÀNG CẦN XỬ LÍ'
+            'total_unrated_order': 0,
+            'done': 0,
+            'description': 'KHÔNG CÓ ĐƠN HÀNG CẦN XỬ LÍ'
         }
 
 

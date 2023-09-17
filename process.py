@@ -1,29 +1,27 @@
 import asyncio
 from playwright.async_api import async_playwright
 from utils import cookies_to_json
+from loguru import logger
 
 
 async def get_cookie_string(cookies: str, username: str, password: str):
     cookie_list = eval(cookies_to_json(cookies))
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch()
         page = await browser.new_page()
-        
-        # Define a function to intercept network requests
-        def intercept_request(route, request):
-            # Access the headers of the intercepted request
-            headers = request.headers()
 
-            # Extract the Referer header
-            referer_header = headers.get("Referer")
+       # Listen for response event
+        def on_response(response):
+            # Access the response headers
+            headers = response.headers
 
-            if referer_header:
-                print("Referer Header Value:", referer_header)
+            # Check if the 'Set-Cookie' header exists
+            if 'Set-Cookie' in headers:
+                set_cookie_value = headers['Set-Cookie']
+                print("Set-Cookie Header Value:", set_cookie_value)
 
-            # Continue the request
-            route.continue_()
-
+        page.on("response", on_response)  # Attach the event listener
         await page.context.add_cookies(cookie_list)
 
         # Navigate to the desired URL
@@ -37,7 +35,7 @@ async def get_cookie_string(cookies: str, username: str, password: str):
         # Wait for some time to allow the login process to complete
         await asyncio.sleep(5)
         await page.goto('https://shopee.vn/user/account/profile')
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
         # Get updated cookies after login
         new_cookies = await page.context.cookies()
 
