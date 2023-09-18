@@ -1,6 +1,7 @@
 import asyncio
 from playwright.async_api import async_playwright
 from utils import cookies_to_json
+from loguru import logger
 
 
 async def get_cookie_string(cookies: str, username: str, password: str):
@@ -30,7 +31,7 @@ async def get_cookie_string(cookies: str, username: str, password: str):
         # Wait for some time to allow the login process to complete
         await asyncio.sleep(5)
         await page.goto('https://shopee.vn/user/account/profile')
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
         # Get updated cookies after login
         new_cookies = await page.context.cookies()
 
