@@ -170,7 +170,7 @@ async def unrated_order(cookie: str):
         logger.info('XÁC NHẬN HOÀN THÀNH')
         confirm_delivered_api = cfg.get_shopee_api().get('confirm_deliverd_order')
 
-        for order in unconfirmed_orders['data']:
+        for order in unconfirmed_orders:
             confirm_order = {
                 'order_id': order['order_id']
             }
@@ -186,7 +186,9 @@ async def unrated_order(cookie: str):
 
 @app.post('/rate_order')
 async def rate_order(cookie: str, username: str, password: str):
-    cookie_string = await get_cookie_string(cookie, username, password)
+    cookie_string, x_csrftoken = await get_cookie_string(cookie, username, password)
+    logger.info(cookie_string)
+    logger.info(x_csrftoken)
 
     logger.info('LẤY DANH SÁCH ĐƠN CHƯA XÁC NHẬN HOÀN THÀNH')
     # Get unconfirmed orders and process confirm
@@ -198,12 +200,13 @@ async def rate_order(cookie: str, username: str, password: str):
         logger.info('XÁC NHẬN HOÀN THÀNH')
         confirm_delivered_api = cfg.get_shopee_api().get('confirm_deliverd_order')
 
-        for order in unconfirmed_orders['data']:
+        for order in unconfirmed_orders:
             confirm_order = {
                 'order_id': order['order_id']
             }
-            requests.post(confirm_delivered_api, headers={
-                'Cookie': cookie_string, 'X-Api-Source': 'pc'}, data=confirm_order)
+            confirm_deliverd_request = requests.post(confirm_delivered_api, headers={
+                'Cookie': cookie_string, 'X-Csrftoken':x_csrftoken}, data=confirm_order)
+            logger.info(confirm_deliverd_request.json())
             logger.info('Order %s confirmed delivery' % order['order_id'])
 
     logger.info('LẤY DANH SÁCH ĐƠN CHƯA ĐÁNH GIÁ')
@@ -289,12 +292,22 @@ async def rate_order(cookie: str, username: str, password: str):
                     "api_version": 2
                 }
                 json_params = json.dumps(rate_form)
-                logger.info(json_params)
-                requests.post(rate_order_api, headers={
-                    'Cookie': cookie_string, 'X-Api-Source': 'pc', 'Referer': 'https://shopee.vn/user/purchase/?type=3', 'X-Csrftoken': 'ChxdrLjaxFtdTGIlGLWPsEpTvNVO36XV', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76'}, data=json_params)
+                rate_order_request = requests.post(rate_order_api, headers={
+                    'Cookie': cookie_string , 
+                    'X-Api-Source': 'pc', 
+                    'Referer': 'https://shopee.vn/user/purchase/?type=3', 
+                    'X-Csrftoken': x_csrftoken, 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.76'
+                }, data=json_params)
+                logger.info(rate_order_request.json())
                 count += 1
             except Exception as ex:
-                pass
+                return {
+                    'status_code': 406,
+                    'total_unrated_order': len(unrated_orders),
+                    'done': count,
+                    'description': 'XỬ LÍ KHÔNG THÀNH CÔNG'
+            }
         return {
             'status_code': 200,
             'total_unrated_order': len(unrated_orders),
@@ -303,7 +316,7 @@ async def rate_order(cookie: str, username: str, password: str):
         }
     else:
         return {
-            'status_code': 200,
+            'status_code': 201,
             'total_unrated_order': 0,
             'done': 0,
             'description': 'KHÔNG CÓ ĐƠN HÀNG CẦN XỬ LÍ'

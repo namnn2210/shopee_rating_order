@@ -39,6 +39,10 @@ async def get_cookie_string(cookies: str, username: str, password: str):
         # Format cookies into "key=value" format
         formatted_cookies = [
             f"{cookie['name']}={cookie['value']}" for cookie in new_cookies]
+        
+        for cookie in new_cookies:
+            if cookie['name'] == 'csrftoken':
+                x_csrftoken = cookie['value']
 
         # Join the formatted cookies into a single string, separating them with semicolons
         cookie_string = "; ".join(formatted_cookies)
@@ -47,4 +51,4 @@ async def get_cookie_string(cookies: str, username: str, password: str):
         await browser.close()
 
         # Return the cookie_string
-        return cookie_string
+        return cookie_string, x_csrftoken
