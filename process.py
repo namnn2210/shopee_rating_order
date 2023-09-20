@@ -22,17 +22,18 @@ async def get_cookie_string(cookies: str, username: str, password: str):
 
         # Navigate to the desired URL
         await page.goto('https://shopee.vn/buyer/login')
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
         # Fill in login credentials and submit
         await page.locator('[placeholder="Email/Số điện thoại/Tên đăng nhập"]').fill(username)
-        await page.locator('[placeholder="Mật khẩu"]').fill(password)
         await asyncio.sleep(2)
+        await page.locator('[placeholder="Mật khẩu"]').fill(password)
+        await asyncio.sleep(5)
         await page.click('button.wyhvVD')
 
         # Wait for some time to allow the login process to complete
-        await asyncio.sleep(5)
-        await page.goto('https://shopee.vn/user/account/profile')
         await asyncio.sleep(10)
+        await page.goto('https://shopee.vn/user/account/profile')
+        await asyncio.sleep(15)
         # Get updated cookies after login
         new_cookies = await page.context.cookies()
 
