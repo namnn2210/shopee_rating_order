@@ -88,7 +88,7 @@ def get_unrated_orders(cookie,x_csrftoken):
         # logger.info(orders_data)
         for order in orders_data:
             # Check if order is unrated
-            if order['status']['header_text']['text'] == 'order_status_text_completed_buyer_not_rated_can_rate':
+            if order['status']['header_text']['text'] == 'order_status_text_completed_buyer_not_rated_can_rate' or order['status']['header_text']['text'] == 'order_status_text_completed_return_refund_by_date':
                 list_order_products_data = order['info_card'][
                     'order_list_cards'][0]['product_info']['item_groups'][0]['items']
                 list_products = []
@@ -270,6 +270,7 @@ async def rate_order(cookie: str, username: str, password: str, comment:str):
                     logger.info(rate_order_request.json())
                     count += 1
                 except Exception as ex:
+                    logger.info(str(ex))
                     return {
                         'status_code': 406,
                         'total_unrated_order': len(unrated_orders),
